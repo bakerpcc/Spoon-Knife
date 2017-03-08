@@ -1,0 +1,1041 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Basics of Spark on HDInsight\n",
+    "\n",
+    "<a href=\"http://spark.apache.org/\" target=\"_blank\">Apache Spark</a> is an open-source parallel processing framework that supports in-memory processing to boost the performance of big-data analytic applications. When you provision a Spark cluster in HDInsight, you provision Azure compute resources with Spark installed and configured. The data to be processed is stored in Azure Blob storage (WASB).\n",
+    "\n",
+    "![Spark on HDInsight](https://mysstorage.blob.core.windows.net/notebookimages/overview/SparkArchitecture.png \"Spark on HDInsight\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now that you have created a Spark cluster, let us understand some basics of working with Spark on HDInsight. For detailed discussion on working with Spark, see [Spark Programming Guide](http://spark.apache.org/docs/2.0.0/sql-programming-guide.html)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "----------\n",
+    "## Notebook setup\n",
+    "\n",
+    "When using PySpark kernel notebooks on HDInsight, there is no need to create a SparkContext or a SparkSession; a SparkSession which has the SparkContext is created for you automatically when you run the first code cell, and you'll be able to see the progress printed. The contexts are created with the following variable names:\n",
+    "- SparkSession (spark)\n",
+    "- SparkContext (sc)\n",
+    "\n",
+    "To run the cells below, place the cursor in the cell and then press **SHIFT + ENTER**."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## How do I make an RDD?\n",
+    "\n",
+    "RDDs can be created from stable storage or by transforming other RDDs. Run the cells below to create RDDs from the sample data files available in the storage container associated with your Spark cluster. One such sample data file is available on the cluster at `wasb:///example/data/fruits.txt`.  The /// notation reads data from the default container."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "ename": "NameError",
+     "evalue": "name 'sc' is not defined",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)",
+      "\u001b[0;32m<ipython-input-1-00cf7a651211>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0mfruits\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0msc\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mtextFile\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m'wasb:///example/data/fs.txt'\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m      2\u001b[0m \u001b[0myellowThings\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0msc\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mtextFile\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m'wasb:///example/data/yellowthings.txt'\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      3\u001b[0m \u001b[0mfruits\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcollect\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;31mNameError\u001b[0m: name 'sc' is not defined"
+     ]
+    }
+   ],
+   "source": [
+    "fruits = sc.textFile('wasb:///example/data/fs.txt')\n",
+    "yellowThings = sc.textFile('wasb:///example/data/yellowthings.txt')\n",
+    "fruits.collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "yellowThings.collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# You can also read from other containers.\n",
+    "# The 'cluster' container under the storage account 'msbd' has been made public.\n",
+    "# You the following format to read data from a public container\n",
+    "# The file can also be accessed from the web at: \n",
+    "# https://msbd.blob.core.windows.net/cluster/data/course.txt\n",
+    "\n",
+    "txtfile = sc.textFile('wasb://cluster@msbd.blob.core.windows.net/data/course.txt')\n",
+    "txtfile.collect()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "----------\n",
+    "## PySpark magics \n",
+    "\n",
+    "The PySpark kernel provides some predefined “magics”, which are special commands that you can call with `%%` (e.g. `%%MAGIC` <args>). The magic command must be the first word in a code cell and allow for multiple lines of content. You can’t put comments before a cell magic.\n",
+    "\n",
+    "For more information on magics, see [here](http://ipython.readthedocs.org/en/stable/interactive/magics.html)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "%%info"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "collapsed": true
+   },
+   "source": [
+    "### Session configuration (%%configure)\n",
+    " \n",
+    "Use the `%%configure` magic to configure new or existing Livy sessions.\n",
+    "* If a session is already running, you can change the configuration by using the `-f` argument with `%%configure` magic. This will delete the current session and recreate it with the applied configurations. If you don't provide the `-f` argument, an error will be displayed and no configuration changes will be applied.\n",
+    "* If you haven't already started the session, then the `-f` argument is not mandatory. Even if you use it with a session that you are just creating, it will not delete any currently running sessions.\n",
+    "\n",
+    "These are some session attributes that can be used for configuration \n",
+    "- **\"name\"**: Name of the application\n",
+    "- **\"driverMemory\"**: Memory for driver (e.g. 1000M, 2G) \n",
+    "- **\"executorMemory\"**: Memory for executor (e.g. 1000M, 2G) \n",
+    "- **\"executorCores\"**: Number of cores used by executor"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0.30081770169082334\n"
+     ]
+    }
+   ],
+   "source": [
+    "import random\n",
+    "x=random.random()\n",
+    "print(x)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[65537, 354833, 17, 401537, 486641, 122209, 113, 43649, 394993, 350033]"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "n = 500000\n",
+    "allnumbers = sc.parallelize(range(2, n), 8)\n",
+    "composite = allnumbers.flatMap(lambda x: range(x*2, n, x))\n",
+    "prime = allnumbers.subtract(composite)\n",
+    "prime.take(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[62, 62, 62, 63, 62, 62, 62, 63]\n",
+      "[1767, 249, 103, 62, 0, 0, 0, 0]\n",
+      "[0, 11, 1, 13, 0, 13, 0, 12, 0, 9, 0, 12, 0, 11, 0, 13]\n",
+      "[17, 241, 401, 337]\n"
+     ]
+    }
+   ],
+   "source": [
+    "n = 500\n",
+    "allnumbers = sc.parallelize(range(2, n), 8)\n",
+    "composite = allnumbers.flatMap(lambda x: range(x*2, n, x))\n",
+    "prime = allnumbers.subtract(composite)\n",
+    "prime.take(10)\n",
+    "\n",
+    "# Find the number of elements in each parttion\n",
+    "def partitionsize(it): \n",
+    "    s = 0\n",
+    "    for i in it:\n",
+    "        s += 1\n",
+    "    yield s\n",
+    "\n",
+    "print(allnumbers.mapPartitions(partitionsize).collect())\n",
+    "print(composite.mapPartitions(partitionsize).collect())\n",
+    "print(prime.mapPartitions(partitionsize).collect())\n",
+    "print(prime.glom().collect()[1][0:4])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "%%configure -f\n",
+    "{\"executorCores\":4}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[[(8, 8), (96, 96), (400, 400), (240, 240), (800, 800)], [(401, 401)], [], []]\n",
+      "<function portable_hash at 0x104c39d90>\n"
+     ]
+    }
+   ],
+   "source": [
+    "data = [8, 96, 240, 400, 401, 800]\n",
+    "rdd = sc.parallelize(zip(data, data),4)\n",
+    "rdd = rdd.reduceByKey(lambda x,y: x+y)\n",
+    "# rdd = rdd.sortByKey()\n",
+    "print(rdd.glom().collect())\n",
+    "print(rdd.partitioner.partitionFunc)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "----------\n",
+    "\n",
+    "##  RDD operations"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# map\n",
+    "fruitsReversed = fruits.map(lambda fruit: fruit[::-1])\n",
+    "fruitsReversed.collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# filter\n",
+    "shortFruits = fruits.filter(lambda fruit: len(fruit) <= 5)\n",
+    "shortFruits.collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# flatMap\n",
+    "characters = fruits.flatMap(lambda fruit: list(fruit))\n",
+    "characters.collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# union\n",
+    "fruitsAndYellowThings = fruits.union(yellowThings)\n",
+    "fruitsAndYellowThings.collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# intersection\n",
+    "yellowFruits = fruits.intersection(yellowThings)\n",
+    "yellowFruits.collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# distinct\n",
+    "distinctFruitsAndYellowThings = fruitsAndYellowThings.distinct()\n",
+    "distinctFruitsAndYellowThings.collect()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### RDD actions\n",
+    "Following are examples of some of the common actions available. For a detailed list, see [RDD Actions](https://spark.apache.org/docs/2.0.0/programming-guide.html#actions).\n",
+    "\n",
+    "Run some transformations below to understand this better. Place the cursor in the cell and press **SHIFT + ENTER**."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# collect\n",
+    "fruitsArray = fruits.collect()\n",
+    "yellowThingsArray = yellowThings.collect()\n",
+    "fruitsArray"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# count\n",
+    "numFruits = fruits.count()\n",
+    "numFruits"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# take\n",
+    "first3Fruits = fruits.take(3)\n",
+    "first3Fruits"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# reduce\n",
+    "letterSet = fruits.map(lambda fruit: set(fruit)).reduce(lambda x, y: x.union(y))\n",
+    "letterSet"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "letterSet = fruits.flatMap(lambda fruit: list(fruit)).distinct().collect()\n",
+    "letterSet"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Closure"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0"
+     ]
+    }
+   ],
+   "source": [
+    "counter = 0\n",
+    "rdd = sc.parallelize(xrange(10))\n",
+    "\n",
+    "# Wrong: Don't do this!!\n",
+    "def increment_counter(x):\n",
+    "    global counter\n",
+    "    counter += x\n",
+    "\n",
+    "rdd.foreach(increment_counter)\n",
+    "\n",
+    "print counter"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "45"
+     ]
+    }
+   ],
+   "source": [
+    "rdd = sc.parallelize(xrange(10))\n",
+    "accum = sc.accumulator(0)\n",
+    "\n",
+    "def g(x):\n",
+    "    global accum\n",
+    "    accum += x\n",
+    "\n",
+    "a = rdd.foreach(g)\n",
+    "\n",
+    "print accum.value"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0\n",
+      "45\n",
+      "45"
+     ]
+    }
+   ],
+   "source": [
+    "rdd = sc.parallelize(xrange(10))\n",
+    "accum = sc.accumulator(0)\n",
+    "\n",
+    "def g(x):\n",
+    "    global accum\n",
+    "    accum += x\n",
+    "    return x * x\n",
+    "\n",
+    "a = rdd.map(g)\n",
+    "print accum.value\n",
+    "\n",
+    "a.cache()\n",
+    "\n",
+    "tmp = a.count()\n",
+    "print accum.value\n",
+    "\n",
+    "tmp = a.count()\n",
+    "print accum.value"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "45"
+     ]
+    }
+   ],
+   "source": [
+    "from operator import add\n",
+    "\n",
+    "rdd = sc.parallelize(xrange(10))\n",
+    "\n",
+    "print rdd.reduce(add)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "PythonRDD[134] at RDD at PythonRDD.scala:48\n",
+      "PythonRDD[137] at RDD at PythonRDD.scala:48\n",
+      "PythonRDD[141] at RDD at PythonRDD.scala:48\n",
+      "PythonRDD[149] at RDD at PythonRDD.scala:48\n",
+      "PythonRDD[153] at RDD at PythonRDD.scala:48\n",
+      "PythonRDD[157] at RDD at PythonRDD.scala:48\n",
+      "PythonRDD[162] at RDD at PythonRDD.scala:48\n",
+      "PythonRDD[167] at RDD at PythonRDD.scala:48\n",
+      "43"
+     ]
+    }
+   ],
+   "source": [
+    "data = [34, 67, 21, 56, 47, 89, 12, 44, 74, 43, 26]\n",
+    "A = sc.parallelize(data)\n",
+    "k = 4\n",
+    "\n",
+    "while True:\n",
+    "    x = A.first()\n",
+    "    A1 = A.filter(lambda z: z < x)\n",
+    "    A2 = A.filter(lambda z: z > x)\n",
+    "    mid = A1.count()\n",
+    "    if mid == k:\n",
+    "        print x\n",
+    "        break\n",
+    "    if k < mid:\n",
+    "        A = A1\n",
+    "    else:\n",
+    "        A = A2\n",
+    "        k = k - mid - 1\n",
+    "    A.cache()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[12, 21, 26, 34, 43, 44, 47, 56, 67, 74, 89]"
+     ]
+    }
+   ],
+   "source": [
+    "sorted(data)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Key-Value Pairs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 32,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[(10, 1), (12, 1), (6, 2), (9, 1), (5, 3)]"
+     ]
+    }
+   ],
+   "source": [
+    "# reduceByKey\n",
+    "numFruitsByLength = fruits.map(lambda fruit: (len(fruit), 1)).reduceByKey(lambda x, y: x + y)\n",
+    "numFruitsByLength.collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 33,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[(u'and', 3), (u'videos', 1), (u'exposes', 1), (u'as', 1), (u'including', 1), (u'frameworks,', 1), (u'cloud', 1), (u'even', 1), (u'managing', 1), (u'data', 4), (u'students', 1), (u'systems,', 1), (u'thousands', 1), (u'mining', 1), (u'This', 1), (u'technologies', 1), (u'hands-on', 1), (u'commodity', 1), (u'this', 1), (u'experience', 1), (u'enabling', 1), (u'centers.', 1), (u'amount', 1), (u'the', 2), (u'Information', 1), (u'emerge', 1), (u'servers', 1), (u'course', 1), (u'in', 2), (u'Lecture', 1), (u'Description', 1), (u'Big', 1), (u'computing', 1), (u'to', 1), (u'new', 1), (u'across', 1), (u'theory', 1), (u'processing', 1), (u'hundreds', 1), (u'parallel', 1), (u'both', 1), (u'technology.', 1), (u'of', 3), (u'Course', 2), (u'massive', 1), (u'or', 1)]"
+     ]
+    }
+   ],
+   "source": [
+    "from operator import add\n",
+    "\n",
+    "lines = sc.textFile('wasb://cluster@msbd.blob.core.windows.net/data/course.txt')\n",
+    "counts = lines.flatMap(lambda x: x.split()) \\\n",
+    "              .map(lambda x: (x, 1)) \\\n",
+    "              .reduceByKey(add)\n",
+    "counts.collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 34,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[(u'Big', 1), (u'Course', 2), (u'Description', 1), (u'Information', 1), (u'Lecture', 1), (u'This', 1), (u'across', 1), (u'amount', 1), (u'and', 3), (u'as', 1), (u'both', 1), (u'centers.', 1), (u'cloud', 1), (u'commodity', 1), (u'computing', 1), (u'course', 1), (u'data', 4), (u'emerge', 1), (u'enabling', 1), (u'even', 1), (u'experience', 1), (u'exposes', 1), (u'frameworks,', 1), (u'hands-on', 1), (u'hundreds', 1), (u'in', 2), (u'including', 1), (u'managing', 1), (u'massive', 1), (u'mining', 1), (u'new', 1), (u'of', 3), (u'or', 1), (u'parallel', 1), (u'processing', 1), (u'servers', 1), (u'students', 1), (u'systems,', 1), (u'technologies', 1), (u'technology.', 1), (u'the', 2), (u'theory', 1), (u'this', 1), (u'thousands', 1), (u'to', 1), (u'videos', 1)]"
+     ]
+    }
+   ],
+   "source": [
+    "counts.sortByKey().collect()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 35,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[(1, ((134, 'OK'), 'Apple')), (1, ((135, 'OK'), 'Apple')), (1, ((45, 'OK'), 'Apple')), (2, ((53, 'OK'), 'Orange')), (3, ((34, 'OK'), 'TV')), (5, ((162, 'Error'), 'Computer'))]"
+     ]
+    }
+   ],
+   "source": [
+    "products = sc.parallelize([(1, \"Apple\"), (2, \"Orange\"), (3, \"TV\"), (5, \"Computer\")])\n",
+    "#trans = sc.parallelize([(1, 134, \"OK\"), (3, 34, \"OK\"), (5, 162, \"Error\"), (1, 135, \"OK\"), (2, 53, \"OK\"), (1, 45, \"OK\")])\n",
+    "trans = sc.parallelize([(1, (134, \"OK\")), (3, (34, \"OK\")), (5, (162, \"Error\")), (1, (135, \"OK\")), (2, (53, \"OK\")), (1, (45, \"OK\"))])\n",
+    "\n",
+    "print trans.join(products).collect()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### K-means clustering"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 41,
+   "metadata": {
+    "collapsed": false,
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Final centers:  [array([ 0.72879053,  0.28332769]), array([ 0.19679814,  0.31837924]), array([ 0.51874776,  0.78771341])]"
+     ]
+    }
+   ],
+   "source": [
+    "import numpy as np\n",
+    "\n",
+    "def parseVector(line):\n",
+    "    return np.array([float(x) for x in line.split(' ')])\n",
+    "\n",
+    "def closestPoint(p, centers):\n",
+    "    bestIndex = 0\n",
+    "    closest = float(\"+inf\")\n",
+    "    for i in range(len(centers)):\n",
+    "        tempDist = np.sum((p - centers[i]) ** 2)\n",
+    "        if tempDist < closest:\n",
+    "            closest = tempDist\n",
+    "            bestIndex = i\n",
+    "    return bestIndex\n",
+    "\n",
+    "lines = sc.textFile('wasb://cluster@msbd.blob.core.windows.net/data/kmeans_bigdata.txt', 5)  \n",
+    "# lines is an RDD of strings\n",
+    "K = 3\n",
+    "convergeDist = 0.01  \n",
+    "# terminate algorithm when the total distance from old center to new centers is less than this value\n",
+    "\n",
+    "data = lines.map(parseVector).cache() # data is an RDD of arrays\n",
+    "\n",
+    "kCenters = data.takeSample(False, K, 1)  # intial centers as a list of arrays\n",
+    "tempDist = 1.0  # total distance from old centers to new centers\n",
+    "\n",
+    "while tempDist > convergeDist:\n",
+    "    closest = data.map(lambda p: (closestPoint(p, kCenters), (p, 1)))\n",
+    "    # for each point in data, find its closest center\n",
+    "    # closest is an RDD of tuples (index of closest center, (point, 1))\n",
+    "        \n",
+    "    pointStats = closest.reduceByKey(lambda p1, p2: (p1[0] + p2[0], p1[1] + p2[1]))\n",
+    "    # pointStats is an RDD of tuples (index of center,\n",
+    "    # (array of sums of coordinates, total number of points assigned))\n",
+    "    \n",
+    "    newCenters = pointStats.map(lambda st: (st[0], st[1][0] / st[1][1])).collect()\n",
+    "    # compute the new centers\n",
+    "    \n",
+    "    tempDist = sum(np.sum((kCenters[i] - p) ** 2) for (i, p) in newCenters)\n",
+    "    # compute the total disctance from old centers to new centers\n",
+    "    \n",
+    "    for (i, p) in newCenters:\n",
+    "        kCenters[i] = p\n",
+    "        \n",
+    "print \"Final centers: \", kCenters\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### PageRank"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 45,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[(u'287144', 0.17372186322972505), (u'228057', 0.2572641342974561), (u'287141', 0.17447964245345374), (u'228052', 0.5250056308927368), (u'228059', 0.21933664575441247)]"
+     ]
+    }
+   ],
+   "source": [
+    "import re\n",
+    "from operator import add\n",
+    "\n",
+    "def computeContribs(urls, rank):\n",
+    "    # Calculates URL contributions to the rank of other URLs.\n",
+    "    num_urls = len(urls)\n",
+    "    for url in urls:\n",
+    "        yield (url, rank / num_urls)\n",
+    "\n",
+    "def parseNeighbors(urls):\n",
+    "    # Parses a urls pair string into urls pair.\"\"\"\n",
+    "    parts = re.split(r'\\s+', urls)\n",
+    "    return parts[0], parts[1]\n",
+    "\n",
+    "# Loads in input file. It should be in format of:\n",
+    "#     URL         neighbor URL\n",
+    "#     URL         neighbor URL\n",
+    "#     URL         neighbor URL\n",
+    "#     ...\n",
+    "# lines = sc.textFile(\"wasb://cluster@msbd.blob.core.windows.net/data/pagerank_data.txt\", 2)\n",
+    "lines = sc.textFile(\"wasb://cluster@msbd.blob.core.windows.net/data/dblp.in\", 5)\n",
+    "\n",
+    "numOfIterations = 10\n",
+    "\n",
+    "# Loads all URLs from input file and initialize their neighbors. \n",
+    "links = lines.map(lambda urls: parseNeighbors(urls)) \\\n",
+    "             .groupByKey()\n",
+    "\n",
+    "# Loads all URLs with other URL(s) link to from input file \n",
+    "# and initialize ranks of them to one.\n",
+    "ranks = links.map(lambda url_neighbors: (url_neighbors[0], 1.0))\n",
+    "\n",
+    "# Calculates and updates URL ranks continuously using PageRank algorithm.\n",
+    "for iteration in range(numOfIterations):\n",
+    "    # Calculates URL contributions to the rank of other URLs.\n",
+    "    contribs = links.join(ranks, links.getNumPartitions()) \\\n",
+    "                    .flatMap(lambda url_urls_rank:\n",
+    "                             computeContribs(url_urls_rank[1][0],\n",
+    "                                             url_urls_rank[1][1]))\n",
+    "    # After the join, each element in the RDD is of the form\n",
+    "    # (url, (sequence of neighbor urls, rank))\n",
+    "    \n",
+    "    # Re-calculates URL ranks based on neighbor contributions.\n",
+    "    ranks = contribs.reduceByKey(add).mapValues(lambda rank: rank * 0.85 + 0.15)\n",
+    "\n",
+    "print ranks.take(5)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Threading"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 49,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "All started!\n",
+      "Worker 4 reports: Pi is roughly 3.14150256\n",
+      "Worker 0 reports: Pi is roughly 3.14199536\n",
+      "Worker 1 reports: Pi is roughly 3.14215104\n",
+      "Worker 2 reports: Pi is roughly 3.14219568\n",
+      "Worker 3 reports: Pi is roughly 3.1423392\n",
+      "All done!"
+     ]
+    }
+   ],
+   "source": [
+    "import threading\n",
+    "import random\n",
+    "\n",
+    "partitions = 5\n",
+    "n = 5000000 * partitions\n",
+    "\n",
+    "# use different seeds in different threads and different partitions\n",
+    "# a bit ugly, since mapPartitionsWithIndex takes a function with only index\n",
+    "# and it as parameters\n",
+    "def f1(index, it):\n",
+    "    random.seed(index + 987231)\n",
+    "    for i in it:\n",
+    "        x = random.random() * 2 - 1\n",
+    "        y = random.random() * 2 - 1\n",
+    "        yield 1 if x ** 2 + y ** 2 < 1 else 0\n",
+    "\n",
+    "def f2(index, it):\n",
+    "    random.seed(index + 987232)\n",
+    "    for i in it:\n",
+    "        x = random.random() * 2 - 1\n",
+    "        y = random.random() * 2 - 1\n",
+    "        yield 1 if x ** 2 + y ** 2 < 1 else 0\n",
+    "\n",
+    "def f3(index, it):\n",
+    "    random.seed(index + 987233)\n",
+    "    for i in it:\n",
+    "        x = random.random() * 2 - 1\n",
+    "        y = random.random() * 2 - 1\n",
+    "        yield 1 if x ** 2 + y ** 2 < 1 else 0\n",
+    "    \n",
+    "def f4(index, it):\n",
+    "    random.seed(index + 987234)\n",
+    "    for i in it:\n",
+    "        x = random.random() * 2 - 1\n",
+    "        y = random.random() * 2 - 1\n",
+    "        yield 1 if x ** 2 + y ** 2 < 1 else 0\n",
+    "    \n",
+    "def f5(index, it):\n",
+    "    random.seed(index + 987245)\n",
+    "    for i in it:\n",
+    "        x = random.random() * 2 - 1\n",
+    "        y = random.random() * 2 - 1\n",
+    "        yield 1 if x ** 2 + y ** 2 < 1 else 0\n",
+    "\n",
+    "f = [f1, f2, f3, f4, f5]\n",
+    "    \n",
+    "# the function executed in each thread/job\n",
+    "def dojob(i):\n",
+    "    count = sc.parallelize(xrange(1, n + 1), partitions) \\\n",
+    "              .mapPartitionsWithIndex(f[i]).reduce(lambda a,b: a+b)\n",
+    "    print \"Worker\", i, \"reports: Pi is roughly\", 4.0 * count / n\n",
+    "\n",
+    "# create and execute the threads\n",
+    "threads = []\n",
+    "for i in range(5):\n",
+    "    t = threading.Thread(target=dojob, args=(i,))\n",
+    "    threads += [t]\n",
+    "    t.start()\n",
+    "\n",
+    "print \"All started!\"\n",
+    "\n",
+    "# wait for all threads to complete\n",
+    "for t in threads:\n",
+    "    t.join()    \n",
+    "\n",
+    "print \"All done!\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "collapsed": true
+   },
+   "source": [
+    "### Finding Prime Numbers"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "n = 500000\n",
+    "allnumbers = sc.parallelize(xrange(2, n), 8)\n",
+    "composite = allnumbers.flatMap(lambda x: xrange(x*2, n, x))\n",
+    "prime = allnumbers.subtract(composite)\n",
+    "prime.collect()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Join vs. Broadcast Variables"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "products = sc.parallelize([(1, \"Apple\"), (2, \"Orange\"), (3, \"TV\"), (5, \"Computer\")])\n",
+    "trans = sc.parallelize([(1, (134, \"OK\")), (3, (34, \"OK\")), (5, (162, \"Error\")), (1, (135, \"OK\")), (2, (53, \"OK\")), (1, (45, \"OK\"))])\n",
+    "\n",
+    "print trans.join(products).collect()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "products = {1: \"Apple\", 2: \"Orange\", 3: \"TV\", 5: \"Computer\"}\n",
+    "trans = sc.parallelize([(1, (134, \"OK\")), (3, (34, \"OK\")), (5, (162, \"Error\")), (1, (135, \"OK\")), (2, (53, \"OK\")), (1, (45, \"OK\"))])\n",
+    "\n",
+    "broadcasted_products = sc.broadcast(products)\n",
+    "\n",
+    "results = trans.map(lambda x: (x[0], broadcasted_products.value[x[0]], x[1]))\n",
+    "# results = trans.map(lambda x: (x[0], products[x[0]], x[1]))\n",
+    "print results.collect()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "anaconda-cloud": {},
+  "kernelspec": {
+   "display_name": "Python [default]",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.5.2"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}
